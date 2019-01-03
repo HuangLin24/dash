@@ -95,6 +95,7 @@ namespace ns3
     }
 
   protected:
+
     virtual void
     DoDispose(void);
 
@@ -121,12 +122,8 @@ namespace ns3
     std::map<Time, double> m_bitrates;
     double m_bitrateEstimate;
     uint32_t m_segmentId;    // The id of the current segment
-	//fix m_totalsegment to 64
-    uint32_t m_totalsegment=72;
+    uint32_t m_totalsegment=48;
     uint32_t m_segmentLeft;
-
-
-
     std::ofstream buffer_output;
     std::ofstream lastdownloadtime;
     std::ofstream rebufftime_output;
@@ -135,12 +132,8 @@ namespace ns3
     std::ofstream m_segmentId_output;
     std::ofstream permission;
 	std::ofstream time_output;
+	std::ofstream overtime_output;
 
-
-	//open in algorithmsClient.cc
-	//close in dash-client.cc StopApplication()
-
-	std::ofstream log_output;
 
 	double s_lastTime=0.3;
 	double s_lastBuffer=0.0;
@@ -148,7 +141,6 @@ namespace ns3
 
 	std::ofstream s_real_buffer_output;
 
-	std::ofstream tcp_output;
 
   private:
 
@@ -186,14 +178,11 @@ namespace ns3
 	void 
 	setSupplement(double time,double buffer);
 
-	void
-	tcpMonitor();
-
 
 
     virtual void
     CalcNextSegment(uint32_t currRate, uint32_t & nextRate, 
-      Time & delay, Time m_segmentFetchTime, int id, Time CurrDt,uint32_t m_segmentId);
+      Time & delay, Time m_segmentFetchTime, int id, Time CurrDt);
     void
     LogBufferLevel(Time t);
     void inline
@@ -204,6 +193,7 @@ namespace ns3
 
     MpegPlayer m_player;     // The MpegPlayer object
     HttpParser m_parser; // An HttpParser object for parsing the incoming stream into http messages
+
     Ptr<Socket> m_socket;    // Associated socket
     Address m_peer;          // Peer address
     bool m_connected;        // True if connected
@@ -216,6 +206,8 @@ namespace ns3
     Time m_sumDt;            // Used for calculating the average buffering time
     Time m_lastDt; // The previous buffering time (used for calculating the differential
     static int m_countObjs; // Number of DashClient instances (for generating unique id
+
+
     int m_id;
     Time m_requestTime;      // Time of sending the last request
     uint32_t m_segment_bytes; // Bytes of the current segment that have been received so far
@@ -224,8 +216,6 @@ namespace ns3
     Time m_segmentFetchTime;
 
 
-	uint32_t m_tcpPackageBytes=0;
-	double m_tcpMonitorTime=1.0;
 
 
 

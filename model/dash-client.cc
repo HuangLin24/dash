@@ -30,7 +30,6 @@
 
 NS_LOG_COMPONENT_DEFINE("DashClient");
 
-
 namespace ns3
 {
 
@@ -107,11 +106,6 @@ namespace ns3
 	  s_real_buffer_output<<time<<" "<<buffer*0.02<<std::endl;
   }
 
-  
-  void DashClient::tcpMonitor(){
-	  std::cout<<"node:"<<m_id<<" m_segmentId:"<<m_segmentId<<" test ouputtime:"<<Simulator::Now().GetSeconds()<<std::endl;
-  }
-
 
 
 
@@ -120,27 +114,61 @@ namespace ns3
   DashClient::StartApplication(void) // Called at time specified by Start
   {
     NS_LOG_FUNCTION(this);
-	tcp_output.open("./src/dash/model/algorithms/data/tcpMonitor"+std::to_string(m_id));
-
-	buffer_output.open("./src/dash/model/algorithms/data/buffer"+std::to_string(m_id));
-	lastdownloadtime.open("./src/dash/model/algorithms/data/lastdownloadtime"+std::to_string(m_id));
-	rebufftime_output.open("./src/dash/model/algorithms/data/rebufftime"+std::to_string(m_id));
-	currRate_output.open("./src/dash/model/algorithms/data/currRate"+std::to_string(m_id));
-	chunk_size.open("./src/dash/model/algorithms/data/chunk_size"+std::to_string(m_id));
-	m_segmentId_output.open("./src/dash/model/algorithms/data/m_segmentleft"+std::to_string(m_id));
+	std::cout<<"node"<<std::to_string(m_id)<<": "<<GetTypeId()<<std::endl;
+    
+    buffer_output.open("./src/dash/model/algorithms/data/buffer"+std::to_string(m_id));
+    lastdownloadtime.open("./src/dash/model/algorithms/data/lastdownloadtime"+std::to_string(m_id));
+    rebufftime_output.open("./src/dash/model/algorithms/data/rebufftime"+std::to_string(m_id));
+    currRate_output.open("./src/dash/model/algorithms/data/currRate"+std::to_string(m_id));
+    chunk_size.open("./src/dash/model/algorithms/data/chunk_size"+std::to_string(m_id));
+    m_segmentId_output.open("./src/dash/model/algorithms/data/m_segmentleft"+std::to_string(m_id));
 	time_output.open("./src/dash/model/algorithms/data/time"+std::to_string(m_id));
-	//for(double setTime=1.0;setTime<512;setTime+=1.0)
-	//	Simulator::Schedule(Seconds(setTime),tcpMonitor,setTime);
 
-	permission.open("./src/dash/model/algorithms/data/permission"+std::to_string(m_id));
-	permission<<"10"<<std::endl;
-	permission.close();
+
+	overtime_output.open("./src/dash/model/algorithms/data/overtime"+std::to_string(m_id));
+
+
+	s_real_buffer_output.open("./src/dash/model/algorithms/data/realBuffer"+std::to_string(m_id));
+
+
+
+/*
+	MPEGHeader mpegHeader;
+	s_buffer_output.open("./src/dash/model/algorithms/data/sbuffer"+std::to_string(m_id));
+	s_time_output.open("./src/dash/model/algorithms/data/stime"+std::to_string(m_id));
+
+	for(double stime=0.5;stime<1024;stime+=1.0){
+		Simulator::Schedule(Seconds(stime),setSupplement,stime,m_player.GetRealPlayTime(mpegHeader.GetPlaybackTime()));
+	}
+
+	*/
+
+
+
+    permission.open("./src/dash/model/algorithms/data/permission"+std::to_string(m_id));
+    permission<<"10"<<std::endl;
+    permission.close();
+
+	//this code is initial the file
+	//the 0th time to 1th time include ConnectTCPtime and download the 1th chunk time
+	//in algorithm.py,the user sum of downloadtime to represent currTime,so we must fix the algorithm,and use time_output to represent real currTime
+	//lastdownloadtime initial to 1 
+	//because of algorithm_mul.py used to state[] 
+	/*
+	rebufftime_output<<0<<std::endl;
+
+	buffer_output<<0<<std::endl;
+	lastdownloadtime<<1<<std::endl;
+	currRate_output<<m_bitRate<<std::endl;
+	chunk_size<<m_bitRate/8*4<<std::endl;
+	time_output<<Simulator::Now().GetSeconds()<<std::endl;
+	*/
+	//didn't consider the case of TCP offconnect
+	
     
 
     // Create the socket if not already
-	
-	//start 5 times
-	//std::cout<<"test client start"<<std::endl;
+
     if (!m_socket)
       {
 
@@ -176,25 +204,23 @@ namespace ns3
   void
   DashClient::StopApplication(void) // Called at time specified by Stop
   {
+	  std::cout<<"dash stop"<<Simulator::Now().GetSeconds()<<std::endl;
     NS_LOG_FUNCTION(this);
 
+    buffer_output.close();
+    lastdownloadtime.close();
+    rebufftime_output.close();
+    currRate_output.close();
+    chunk_size.close();
+    m_segmentId_output.close();
 
-	buffer_output.close();
-	lastdownloadtime.close();
-	rebufftime_output.close();
-	currRate_output.close();
-	chunk_size.close();
-	m_segmentId_output.close();
-	time_output.close();
 
-	log_output.close();
+	overtime_output.close();
 
 
     
 	s_real_buffer_output<<s_lastTime + s_lastBuffer*0.02<<" "<<0.0<<std::endl;
 	s_real_buffer_output.close();
-
-	tcp_output.close();
 
     if (m_socket != 0)
       {
@@ -221,11 +247,9 @@ namespace ns3
       }
 
 	//after download 48 chunk,stop
-	//if (m_segmentId>=48)
-	//	return;
 	
 
-	if (m_segmentId>=72)
+	if (m_segmentId>=64)
 		return;
 
     Ptr<Packet> packet = Create<Packet>(100);
@@ -295,18 +319,6 @@ namespace ns3
   void
   DashClient::MessageReceived(Packet message)
   {
-	  //tcp monitor can open if need
-	  /*
-	  if(Simulator::Now().GetSeconds()<m_tcpMonitorTime){
-		  m_tcpPackageBytes+=message.GetSize();
-	  }
-	  else{
-		  tcp_output<<m_tcpMonitorTime<<" "<<m_tcpPackageBytes<<std::endl;
-		  m_tcpPackageBytes=0;
-		  m_tcpPackageBytes+=message.GetSize();
-		  m_tcpMonitorTime+=1;
-	  }
-	  */
 
 
 	//std::cout<<"test call node:"<<m_id<<std::endl;
@@ -332,6 +344,10 @@ namespace ns3
       {
     case MPEG_PLAYER_PLAYING:
       m_sumDt += m_player.GetRealPlayTime(mpegHeader.GetPlaybackTime());
+	  //std::cout<<"call sumdt"<<m_sumDt.GetSeconds()<<std::endl;
+	  //std::cout<<"cal sumdt no sum:"<<m_player.GetRealPlayTime(mpegHeader.GetPlaybackTime()).GetSeconds()<<" nowtime:"<<Simulator::Now().GetSeconds()<<" mpegtime:"<<mpegHeader.GetPlaybackTime().GetSeconds()<<std::endl;
+	  //s_real_buffer_output<<mpegHeader.GetPlaybackTime().GetSeconds()<<" "<<std::max(m_player.GetRealPlayTime(mpegHeader.GetPlaybackTime()).GetSeconds(),0.0)<<std::endl;
+	  //s_real_buffer_output<<Simulator::Now().GetSeconds()<<" "<<std::max(m_player.GetRealPlayTime(mpegHeader.GetPlaybackTime()).GetSeconds(),0.0)<<std::endl;
       break;
 
     case MPEG_PLAYER_PAUSED:
@@ -355,29 +371,31 @@ namespace ns3
             8 * m_segment_bytes / m_segmentFetchTime.GetSeconds());
 
         Time currDt = m_player.GetRealPlayTime(mpegHeader.GetPlaybackTime());
+		//std::cout<<"call in dash"<<currDt.GetSeconds()<<std::endl;
         // And tell the player to monitor the buffer level
         LogBufferLevel(currDt);
 
         uint32_t old = m_bitRate;
+        //  double diff = m_lastDt >= 0 ? (currDt - m_lastDt).GetSeconds() : 0;
 
         Time bufferDelay;
 
+        //m_player.CalcNextSegment(m_bitRate, m_player.GetBufferEstimate(), diff,
+        //m_bitRate, bufferDelay);
 
         uint32_t prevBitrate = m_bitRate;
 
         if (m_segmentId > m_totalsegment)
         {
-			//fix here to 64
-          m_totalsegment += 72;
+          m_totalsegment += 48;
         }
         m_segmentLeft = m_totalsegment - m_segmentId;
-       // m_segmentId_output<<m_segmentLeft<<std::endl;
+
+        m_segmentId_output<<m_segmentLeft<<std::endl;
         
 
-        //CalcNextSegment(prevBitrate, m_bitRate, bufferDelay, m_segmentFetchTime, m_id, currDt);
-		//
-		//use player queue denote buffer level
-		CalcNextSegment(prevBitrate,m_bitRate,bufferDelay,m_segmentFetchTime,m_id,Seconds(m_player.GetQueueSize()*0.02),m_segmentLeft);
+        CalcNextSegment(prevBitrate, m_bitRate, bufferDelay, m_segmentFetchTime, m_id, Seconds(m_player.GetQueueSize()*0.02));
+
         
 
         if (prevBitrate != m_bitRate)
@@ -391,24 +409,12 @@ namespace ns3
         //if (bufferDelay == Seconds(0) && currDt <= Seconds(13))
           {
             RequestSegment();
-
-			//this call is ok ,it will call in (time of  MessageReceived() called + 5s)
-			//Simulator::Schedule(Seconds(5),&DashClient::tcpMonitor,this);
-			/*
-			if(m_id==2&&m_segmentId==12)
-				Simulator::Schedule(Seconds(12),&DashClient::RequestSegment,this);
-			else if(m_id==1&&m_segmentId==12)
-				Simulator::Schedule(Seconds(12),&DashClient::RequestSegment,this);
-			else
-				RequestSegment();
-				*/
           }
         else
           {
             m_player.SchduleBufferWakeup(bufferDelay, this);
           }
 
-		/*
         std::cout << Simulator::Now().GetSeconds() << " Node: " << m_id
             << " newBitRate: " << m_bitRate << " oldBitRate: " << old
             << " estBitRate: " << GetBitRateEstimate() << " interTime: "
@@ -416,7 +422,6 @@ namespace ns3
             << currDt.GetSeconds() << " dT: "
             << (m_lastDt >= 0 ? (currDt - m_lastDt).GetSeconds() : 0)
             << " del: " << bufferDelay << std::endl;
-			*/
 
         NS_LOG_INFO(
             "==== Last frame received. Requesting segment " << m_segmentId);
@@ -428,19 +433,23 @@ namespace ns3
         m_lastDt = currDt;
 
       }
-	//real buffer can open if need
 	/*
-	if(s_real_buffer_output.is_open()){
+	  if(Simulator::Now().GetSeconds()-1.0>=s_lastTime){
 		s_lastTime=Simulator::Now().GetSeconds();
-		s_lastBuffer=m_player.GetQueueSize();
+		s_lastBuffer=m_player.GetRealPlayTime(mpegHeader.GetPlaybackTime()).GetSeconds();
 		setSupplement(s_lastTime,s_lastBuffer);
-	}
-	*/
+	  }
+	  */
+	s_lastTime=Simulator::Now().GetSeconds();
+	s_lastBuffer=m_player.GetQueueSize();
+	setSupplement(s_lastTime,s_lastBuffer);
+
+
   }
 
   void
   DashClient::CalcNextSegment(uint32_t currRate, uint32_t & nextRate,
-      Time & delay,Time m_segmentFetchTime, int id, Time currDt,uint32_t m_segmentId)
+      Time & delay,Time m_segmentFetchTime, int id, Time currDt)
   {
     nextRate = currRate;
     delay = Seconds(0);

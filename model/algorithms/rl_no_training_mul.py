@@ -30,7 +30,7 @@ NN_MODEL = './models/pretrain_linear_reward.ckpt'
 DATA_PATH = './data'
 
 
-def main( m_id ,usersnumber,tracename='none',allvideochunk=64):
+def main( m_id ,usersnumber,tracename='none'):
 
     np.random.seed(RANDOM_SEED)
 
@@ -86,18 +86,14 @@ def main( m_id ,usersnumber,tracename='none',allvideochunk=64):
         video_chunk_remain_file = open(DATA_PATH + '/m_segmentleft' + str(m_id))
         time_file = open(DATA_PATH + '/time' + str(m_id))
 
-        currChunk=0
+        end_of_video=0
         
-        while currChunk!=allvideochunk:  # serve video forever
+        while True:  # serve video forever
             # the action is from the last decision
             # this is to make the framework similar to the real
             with open(DATA_PATH + '/permission' + str(m_id)) as enable:
                 key = enable.read()
                 if key == '1':
-
-                    currChunk+=1
-
-
                     output_file = open(DATA_PATH + '/predict' + str(m_id),'a')
                     file_permission = open(DATA_PATH + '/permission' + str(m_id),'a')
                     
@@ -221,11 +217,10 @@ def main( m_id ,usersnumber,tracename='none',allvideochunk=64):
 if __name__ == '__main__':
     users = sys.argv[1]
     tracename=sys.argv[2]
-    allvideochunk=int(sys.argv[3])
     users = int(users)
     clients = []
     for t in xrange(users):
-        clients.append(mp.Process(target=main,args = (t,users,tracename,allvideochunk,)))
+        clients.append(mp.Process(target=main,args = (t,users,tracename)))
     for t in xrange(users):
         clients[t].start()
     for t in xrange(users):

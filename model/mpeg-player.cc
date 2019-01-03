@@ -113,6 +113,9 @@ namespace ns3
         m_state = MPEG_PLAYER_PAUSED;
         m_lastpaused = Simulator::Now();
         m_interrruptions++;
+		std::cout<<"player empty:"<<m_lastpaused.GetSeconds()<<std::endl;
+		//m_dashClient->setSupplement(m_lastpaused.GetSeconds(),0);
+		std::cout<<"player test"<<std::endl;
         return;
       }
     Ptr<Packet> message = m_queue.front();

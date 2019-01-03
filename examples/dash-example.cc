@@ -33,12 +33,9 @@
 #include "ns3/network-module.h"
 #include "ns3/dash-module.h"
 
-#include "../model/algorithms/dash-param.h"
-
 using namespace ns3;
 
 NS_LOG_COMPONENT_DEFINE("DashExample");
-
 
 
 void BandwidthTrace(float inputBW,uint32_t usersNum){
@@ -80,8 +77,7 @@ main(int argc, char *argv[])
   double target_dt = 35.0;
 
 
-  double stopTime = 1024.0;
-
+  double stopTime = 100.0;
   uint32_t seed=1;
   std::string traceName = "None";
 
@@ -133,6 +129,7 @@ main(int argc, char *argv[])
 
 
   cmd.Parse(argc, argv);
+
 
   RngSeedManager::SetSeed(seed);
 
@@ -194,15 +191,8 @@ main(int argc, char *argv[])
   //
   //--------------------------------------------------------------------------------------------------------------------
   
-
-  USERS_BB=users;
-  USERS_MPC=users;
-  USERS_MPCFAST=users;
-  
   if(traceName!="None"){
-    TRACE_NAME_BB=traceName;
-    TRACE_NAME_MPC=traceName;
-    TRACE_NAME_MPCFAST=traceName;
+
 
   	std::string tracePATH = "./src/dash/model/algorithms/test_sim_traces/";
   	tracePATH = tracePATH + traceName;
@@ -223,20 +213,12 @@ main(int argc, char *argv[])
 				cycleTime+=timeToSet;
 				traceFile.clear();
 				traceFile.seekg(0,std::ios::beg);
-				traceFile >> traceTime;
-				traceFile >> traceBandWidth;
+				traceFile>>traceTime;
+				traceFile>>traceBandWidth;
 			}
-
 		}while(atof(traceTime.c_str())+cycleTime<stopTime);
   	}
 	traceFile.close();
-  }
-  else{
-    TRACE_NAME_BB="norway_none";
-    TRACE_NAME_MPC="norway_none";
-    TRACE_NAME_MPCFAST="norway_none";
-
-
   }
 
 

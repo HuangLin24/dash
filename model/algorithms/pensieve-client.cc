@@ -39,7 +39,7 @@ namespace ns3
 
   void
   PensieveClient::CalcNextSegment(uint32_t currRate, uint32_t & nextRate,
-      Time & delay, Time m_segmentFetchTime, int id, Time currDt,uint32_t m_segmentId)
+      Time & delay, Time m_segmentFetchTime, int id, Time currDt)
   {
 
     double rebufftime = std::max(m_segmentFetchTime.GetSeconds() - 4.0, 0.0);
@@ -50,7 +50,6 @@ namespace ns3
 	//
 	
 
-	m_segmentId_output<<m_segmentId<<std::endl;
 
 
     std::ifstream predict_input;
